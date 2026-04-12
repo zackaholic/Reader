@@ -1,0 +1,7 @@
+flask
+anthropic
+mcp
+pymupdf
+voyageai
+sqlite-vec
+python-dotenv

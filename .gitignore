@@ -1,0 +1,17 @@
+# env / secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ingested books (large, regenerable)
+books/
+
+# runtime state
+data/session_state.json
+
+# os
+.DS_Store

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Reader</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header id="header">
+    <div id="header-left">
+      <select id="book-select">
+        <option value="">Loading books…</option>
+      </select>
+    </div>
+    <div id="header-center">
+      <button id="prev-page" title="Previous page (←)">&#8592;</button>
+      <input id="page-input" type="number" min="1" value="1" title="Jump to page" />
+      <span id="page-total">/ —</span>
+      <button id="next-page" title="Next page (→)">&#8594;</button>
+    </div>
+    <div id="header-right">
+      <button id="new-conversation" title="Start a new conversation">New conversation</button>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <main id="main">
+
+    <!-- PDF viewer -->
+    <section id="pdf-pane">
+      <div id="canvas-container">
+        <canvas id="pdf-canvas"></canvas>
+      </div>
+      <div id="pdf-placeholder">Select a book to begin</div>
+    </section>
+
+    <!-- Chat sidebar -->
+    <section id="chat-pane">
+      <div id="messages"></div>
+      <div id="tool-indicator" class="hidden">📖 reading…</div>
+      <div id="input-area">
+        <textarea id="chat-input" placeholder="Ask about this page…" rows="3"></textarea>
+        <button id="send-btn">Send</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PDF.js -->
+  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <!-- marked (markdown rendering) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@13/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
