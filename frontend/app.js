@@ -54,6 +54,12 @@ function populateBookSelect(books, activeBookId) {
     bookSelect.innerHTML = '<option value="">No books ingested yet</option>';
     return;
   }
+  if (!activeBookId) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a book…";
+    bookSelect.appendChild(placeholder);
+  }
   books.forEach(book => {
     const opt = document.createElement("option");
     opt.value = book.book_id;
