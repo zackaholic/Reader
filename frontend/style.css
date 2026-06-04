@@ -86,7 +86,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 /* ── PDF pane ── */
 #pdf-pane {
-  flex: 63;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -118,12 +118,44 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 /* ── Chat pane ── */
 #chat-pane {
-  flex: 37;
+  flex: 0 0 37%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   border-left: 1px solid var(--border);
   background: var(--bg);
+  overflow: hidden;
+  transition: flex-basis 0.2s ease;
+}
+
+#chat-pane.collapsed {
+  flex-basis: 18px;
+}
+
+#chat-toggle {
+  width: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  user-select: none;
+  font-size: 14px;
+}
+
+#chat-toggle:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
+#chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  overflow: hidden;
 }
 
 #messages {

@@ -39,11 +39,16 @@
 
     <!-- Chat sidebar -->
     <section id="chat-pane">
-      <div id="messages"></div>
-      <div id="tool-indicator" class="hidden">📖 reading…</div>
-      <div id="input-area">
-        <textarea id="chat-input" placeholder="Ask about this page…" rows="3"></textarea>
-        <button id="send-btn">Send</button>
+      <div id="chat-toggle" title="Toggle chat panel">
+        <span id="toggle-icon">&#8250;</span>
+      </div>
+      <div id="chat-content">
+        <div id="messages"></div>
+        <div id="tool-indicator" class="hidden">📖 reading…</div>
+        <div id="input-area">
+          <textarea id="chat-input" placeholder="Ask about this page…" rows="3"></textarea>
+          <button id="send-btn">Send</button>
+        </div>
       </div>
     </section>
 

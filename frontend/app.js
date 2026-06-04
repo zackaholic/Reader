@@ -19,6 +19,7 @@ const prevBtn        = document.getElementById("prev-page");
 const nextBtn        = document.getElementById("next-page");
 const pageInput      = document.getElementById("page-input");
 const pageTotal      = document.getElementById("page-total");
+const pdfPane        = document.getElementById("pdf-pane");
 const canvas         = document.getElementById("pdf-canvas");
 const placeholder    = document.getElementById("pdf-placeholder");
 const messages       = document.getElementById("messages");
@@ -26,6 +27,9 @@ const toolIndicator  = document.getElementById("tool-indicator");
 const chatInput      = document.getElementById("chat-input");
 const sendBtn        = document.getElementById("send-btn");
 const newConvoBtn    = document.getElementById("new-conversation");
+const chatPane       = document.getElementById("chat-pane");
+const chatToggle     = document.getElementById("chat-toggle");
+const toggleIcon     = document.getElementById("toggle-icon");
 
 const ctx = canvas.getContext("2d");
 
@@ -102,6 +106,8 @@ async function renderPage(n) {
   if (renderInProgress) return;
   renderInProgress = true;
 
+  const pageChanged = n !== currentPage;
+
   try {
     const page = await pdfDoc.getPage(n);
     const dpr = window.devicePixelRatio || 1;
@@ -122,6 +128,7 @@ async function renderPage(n) {
     prevBtn.disabled = n <= 1;
     nextBtn.disabled = n >= totalPages;
 
+    if (pageChanged) pdfPane.scrollTop = 0;
     notifyPageChange(n);
   } finally {
     renderInProgress = false;
@@ -129,7 +136,6 @@ async function renderPage(n) {
 }
 
 function getScale(page) {
-  const pdfPane = document.getElementById("pdf-pane");
   const availableWidth = pdfPane.clientWidth - 32; // 16px padding each side
   const viewport = page.getViewport({ scale: 1 });
   return availableWidth / viewport.width;
@@ -272,6 +278,13 @@ chatInput.addEventListener("keydown", (e) => {
 newConvoBtn.addEventListener("click", async () => {
   await fetch("/chat/reset", { method: "POST" });
   clearMessages();
+});
+
+chatToggle.addEventListener("click", () => {
+  const collapsed = chatPane.classList.toggle("collapsed");
+  toggleIcon.textContent = collapsed ? "‹" : "›";
+  // Re-render after transition so PDF uses the gained/lost width
+  setTimeout(() => { if (pdfDoc) renderPage(currentPage); }, 220);
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
