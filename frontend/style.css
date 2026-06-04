@@ -59,6 +59,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 #page-total { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
 
+#zoom-divider { width: 1px; height: 16px; background: var(--border); margin: 0 6px; flex-shrink: 0; }
+#zoom-display { color: var(--text-muted); font-size: 13px; min-width: 38px; text-align: center; }
+
 button {
   background: var(--bg);
   color: var(--text);

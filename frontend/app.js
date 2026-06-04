@@ -12,6 +12,12 @@ let currentBookId = null;
 let renderInProgress = false;
 let pageDebounceTimer = null;
 let sendingMessage = false;
+let zoomLevel = 1.0;
+let savedZoomLevel = 1.0; // zoom before chat panel was opened
+
+const ZOOM_STEP = 0.1;
+const ZOOM_MIN  = 0.5;
+const ZOOM_MAX  = 2.0;
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const bookSelect     = document.getElementById("book-select");
@@ -27,6 +33,9 @@ const toolIndicator  = document.getElementById("tool-indicator");
 const chatInput      = document.getElementById("chat-input");
 const sendBtn        = document.getElementById("send-btn");
 const newConvoBtn    = document.getElementById("new-conversation");
+const zoomInBtn      = document.getElementById("zoom-in");
+const zoomOutBtn     = document.getElementById("zoom-out");
+const zoomDisplay    = document.getElementById("zoom-display");
 const chatPane       = document.getElementById("chat-pane");
 const chatToggle     = document.getElementById("chat-toggle");
 const toggleIcon     = document.getElementById("toggle-icon");
@@ -138,7 +147,13 @@ async function renderPage(n) {
 function getScale(page) {
   const availableWidth = pdfPane.clientWidth - 32; // 16px padding each side
   const viewport = page.getViewport({ scale: 1 });
-  return availableWidth / viewport.width;
+  return (availableWidth / viewport.width) * zoomLevel;
+}
+
+function updateZoomDisplay() {
+  zoomDisplay.textContent = Math.round(zoomLevel * 100) + "%";
+  zoomOutBtn.disabled = zoomLevel <= ZOOM_MIN;
+  zoomInBtn.disabled  = zoomLevel >= ZOOM_MAX;
 }
 
 // Debounced page-change notification to backend
@@ -280,10 +295,31 @@ newConvoBtn.addEventListener("click", async () => {
   clearMessages();
 });
 
+zoomInBtn.addEventListener("click", () => {
+  zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
+  updateZoomDisplay();
+  if (pdfDoc) renderPage(currentPage);
+});
+
+zoomOutBtn.addEventListener("click", () => {
+  zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
+  updateZoomDisplay();
+  if (pdfDoc) renderPage(currentPage);
+});
+
 chatToggle.addEventListener("click", () => {
   const collapsed = chatPane.classList.toggle("collapsed");
   toggleIcon.textContent = collapsed ? "‹" : "›";
-  // Re-render after transition so PDF uses the gained/lost width
+  // Reset zoom only when opening the chat panel (pane shrinks), so the
+  // narrower view always starts at fit-to-width. Closing preserves zoom.
+  if (!collapsed) {
+    savedZoomLevel = zoomLevel;
+    zoomLevel = 1.0;
+    updateZoomDisplay();
+  } else {
+    zoomLevel = savedZoomLevel;
+    updateZoomDisplay();
+  }
   setTimeout(() => { if (pdfDoc) renderPage(currentPage); }, 220);
 });
 
