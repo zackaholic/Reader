@@ -139,7 +139,7 @@ def embed_chunks(chunks: list[dict]) -> list[list[float]]:
 
 
 def build_sqlite(book_dir: Path, chunks: list[dict], embeddings: list[list[float]]) -> None:
-    """Create chunks.sqlite with a metadata table and a sqlite-vec virtual table."""
+    """Create chunks.sqlite with a metadata table, a sqlite-vec virtual table, and an FTS5 BM25 index."""
     db_path = book_dir / "chunks.sqlite"
     if db_path.exists():
         db_path.unlink()
@@ -163,6 +163,12 @@ def build_sqlite(book_dir: Path, chunks: list[dict], embeddings: list[list[float
             id          INTEGER PRIMARY KEY,
             embedding   FLOAT[{vec_dim}]
         );
+
+        CREATE VIRTUAL TABLE chunks_fts USING fts5(
+            text,
+            content='chunks',
+            content_rowid='id'
+        );
     """)
 
     conn.executemany(
@@ -177,6 +183,8 @@ def build_sqlite(book_dir: Path, chunks: list[dict], embeddings: list[list[float
             for i, emb in enumerate(embeddings)
         ],
     )
+
+    conn.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
 
     conn.commit()
     conn.close()

@@ -4,6 +4,7 @@ This is the only place that touches pages.json, metadata.json, and chunks.sqlite
 """
 
 import json
+import re
 import sqlite3
 import struct
 from pathlib import Path
@@ -55,7 +56,10 @@ def load_pages_range(book_id: str, start: int, end: int) -> list[dict]:
 
 
 def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
-    """Embed query and return top-k matching chunks from the vector index."""
+    """
+    Hybrid search: vector (Voyage AI) + BM25 (FTS5), merged with Reciprocal Rank Fusion.
+    Falls back to vector-only if the FTS5 table is absent (pre-migration index).
+    """
     if not VOYAGE_API_KEY:
         raise RuntimeError("VOYAGE_API_KEY not set")
 
@@ -74,25 +78,62 @@ def search_chunks(book_id: str, query: str, k: int = 5) -> list[dict]:
 
     vec_dim = len(query_vec)
     packed = struct.pack(f"{vec_dim}f", *query_vec)
+    fetch_k = k * 3  # over-fetch before RRF merge
 
-    rows = conn.execute(
+    # Vector search
+    vec_rows = conn.execute(
         """
-        SELECT c.page_number, c.text, v.distance
+        SELECT c.id, c.page_number, c.text, v.distance
         FROM chunk_vecs v
         JOIN chunks c ON c.id = v.id
         WHERE v.embedding MATCH ?
           AND k = ?
         ORDER BY v.distance
         """,
-        (packed, k),
+        (packed, fetch_k),
     ).fetchall()
+
+    # BM25 search via FTS5; silently skipped if table doesn't exist
+    bm25_rows = []
+    fts_query = " ".join(re.sub(r"[^\w\s]", " ", query).split())
+    if fts_query:
+        try:
+            bm25_rows = conn.execute(
+                """
+                SELECT c.id, c.page_number, c.text, bm25(chunks_fts) AS score
+                FROM chunks_fts
+                JOIN chunks c ON c.id = chunks_fts.rowid
+                WHERE chunks_fts MATCH ?
+                ORDER BY score
+                LIMIT ?
+                """,
+                (fts_query, fetch_k),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            pass
+
     conn.close()
+
+    # Reciprocal Rank Fusion — k=60 is the standard constant
+    RRF_K = 60
+    scores: dict[int, float] = {}
+    chunk_data: dict[int, tuple] = {}
+
+    for rank, (chunk_id, page_number, text, _) in enumerate(vec_rows):
+        scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (RRF_K + rank + 1)
+        chunk_data[chunk_id] = (page_number, text)
+
+    for rank, (chunk_id, page_number, text, _) in enumerate(bm25_rows):
+        scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (RRF_K + rank + 1)
+        chunk_data[chunk_id] = (page_number, text)
+
+    merged = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:k]
 
     return [
         {
-            "page_number": row[0],
-            "snippet": row[1][:300],
-            "score": row[2],
+            "page_number": chunk_data[cid][0],
+            "snippet": chunk_data[cid][1][:300],
+            "score": rrf_score,
         }
-        for row in rows
+        for cid, rrf_score in merged
     ]
